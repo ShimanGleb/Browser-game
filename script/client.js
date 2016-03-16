@@ -1,11 +1,10 @@
 function Initialize()
 {	
 	var request = new XMLHttpRequest();
-	var body = 'some request';
-	request.open('POST', 'http://localhost:8888', true);	
-	//request.setRequestHeader('Access-Control-Allow-Origin', 'http://localhost:8888/');
+	var body = 'initialize:1:1';
+	request.open('POST', 'http://localhost:8888', false);	
 	request.setRequestHeader('content-type', 'application/x-www-form-urlencoded');
 	request.send(body);
-		
+	console.log(request.response);	
 	document.body.innerHTML = "<strong>Initialize</strong>: success.";
 }

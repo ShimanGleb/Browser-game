@@ -4,24 +4,26 @@ var url = require("url");
 
 function start(route) {
   function onRequest(request, response) {
-    var pathname = url.parse(request.url).pathname;
-    console.log("Request for " + pathname + " received.");
+    /*var pathname = url.parse(request.url).pathname;
+    console.log("Request for " + pathname + " received.");*/
 	
-    route(pathname);	
+    
     response.setHeader('Access-Control-Allow-Origin', 'null');
     response.writeHead(200, {"Content-Type": "text/plain",});
 	
 	var data = '';
     request.on('data', function(chunk) {
         data += chunk.toString();
+		
     });
     request.on('end', function() {
-        console.log(data);        
+        console.log(data);
+		var info=data.split(':');
+		
+		route(response,info);
         response.end();
-    });
-		 
-    response.write("Hello World");
-    response.end();
+    });		  
+    
   }
 
   http.createServer(onRequest).listen(port);
