@@ -1,0 +1,3 @@
+user1=entrance=ring=sewers
+user2=entrance=ring
+user3=entrance

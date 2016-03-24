@@ -8,7 +8,7 @@ function start(route) {
     console.log("Request for " + pathname + " received.");*/
 	
     
-    response.setHeader('Access-Control-Allow-Origin', 'null');
+    response.setHeader('Access-Control-Allow-Origin', 'http://localhost:2222');
     response.writeHead(200, {"Content-Type": "text/plain",});
 	
 	var data = '';
