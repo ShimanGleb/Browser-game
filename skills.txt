@@ -1,0 +1,7 @@
+slash=att Up=1.0
+awesome slash=att Up=1.2=agi Up=1.2
+shoot=att Up=1.0
+shotgun shoot=att Up=1.2=agi Up=3
+bite=att Up=1.0
+prick=att Up=1.0
+smother=att Up=1.2=agi Dw=1.2

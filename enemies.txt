@@ -1,0 +1,3 @@
+cancer={ "name": "cancer", "hp": 20, "tp": 0 , "att": 10, "def": 3, "agi": 2, "skill": ["bite"], "exp": 10 }
+raven={ "name": "raven", "hp": 20, "tp": 0 , "att": 10, "def": 2, "agi": 8, "skill": ["prick"], "exp": 10 }
+worm={ "name": "worm", "hp": 50, "tp": 100 , "att": 20, "def": 5, "agi": 10, "skill": ["bite", "smother"], "exp": 50 }

@@ -1,3 +1,9 @@
+var hero;
+var enemy;
+var wasBattle=false;
+var willLeave=false;
+var actionRoom;
+
 function Initialize(username)
 {	
 	var request = new XMLHttpRequest();
@@ -19,7 +25,7 @@ function Initialize(username)
 function RequestMaps(username)
 {	
 	var request = new XMLHttpRequest();
-	var body = 'GiveMaps:'+username;
+	var body = 'GiveMaps='+username;
 	request.open('POST', 'http://localhost:8888', false);	
 	request.setRequestHeader('content-type', 'application/x-www-form-urlencoded');
 	request.send(body);	
@@ -35,12 +41,20 @@ function RequestMaps(username)
 function Sortie(username,map)
 {
 	var request = new XMLHttpRequest();
-	var body = 'Sortie:'+username+':'+map;
+	var body = 'Sortie='+username+'='+map;
 	request.open('POST', 'http://localhost:8888', false);	
 	request.setRequestHeader('content-type', 'application/x-www-form-urlencoded');
-	request.send(body);
+	request.send(body);	
 	var data=request.response.split('\n');
-	var rooms=data[2].split('=')
+	var heroName=data[0].split('=')[1];
+	var heroLv=data[0].split('=')[2];
+	heroLv=heroLv.replace('\r','');
+	heroLv=heroLv.replace('\n','');
+	hero=GiveHero(heroName,heroLv);		
+	hero.currentHp=hero.hp;
+	hero.currentTp=hero.tp;
+	
+	var rooms=data[2].split('=');
 	document.body.innerHTML="You are in " + rooms[0]+"<br>";
 	for (var i=1; i<rooms.length; i++)
 	{	
@@ -52,19 +66,138 @@ function Sortie(username,map)
 
 function GoToRoom(username,room,map)
 {
-	var request = new XMLHttpRequest();
-	var body = 'GoToRoom:'+username+':'+map+':'+room;
+	var request = new XMLHttpRequest();	
+	var body = 'GoToRoom='+username+'='+map+'='+room;
 	request.open('POST', 'http://localhost:8888', false);	
 	request.setRequestHeader('content-type', 'application/x-www-form-urlencoded');
 	request.send(body);
-	console.log(request.response);
-	var data=request.response.split('\n');	
+	console.log(request.response);	
+	var data=request.response.split('\n');
+	data[1]=data[1].replace('\r','');
+	data[1]=data[1].replace('\n','');
+	if (data[1]=='leave')
+	{
+		willLeave=true;
+	}
 	var rooms=data[2].split('=');
+	actionRoom=rooms[0];
+	if (!wasBattle)
+	{
+		if (data[0].split('=')[0]=='fight')
+		{
+		actionRoom=username+"','"+rooms[0]+"','"+map;		
+		wasBattle=true;
+		var enemyName=data[0].split('=')[1];
+		enemyName=enemyName.replace('\r','');
+		enemyName=enemyName.replace('\n','');
+		
+		enemy=GiveEnemy(enemyName);
+		enemy.currentHp=enemy.hp;
+		enemy.currentTp=enemy.tp;
+		
+		InitializeBattle(hero,enemy);
+		return;
+		}
+	}
+	wasBattle=false;
+	if (willLeave)
+	{
+		
+	}
 	document.body.innerHTML="You are in " + rooms[0]+"<br>";
 	for (var i=1; i<rooms.length; i++)
 	{
 		rooms[i]=rooms[i].replace('\r','');
 		rooms[i]=rooms[i].replace('\n','');
+		
 		document.body.innerHTML += "<input type=\"button\" value=\"Go to "+rooms[i]+"\" onClick=\"GoToRoom('"+username+"','"+rooms[i]+"','"+map+"')\" style=\"position:absolute; top:"+(3*i)+"%\"/>";
 	}
+}
+
+function GiveEnemy(enemyName)
+{
+	var request = new XMLHttpRequest();	
+	var body = 'GiveEnemy='+enemyName;
+	request.open('POST', 'http://localhost:8888', false);	
+	request.setRequestHeader('content-type', 'application/x-www-form-urlencoded');
+	request.send(body);	
+	var res=JSON.parse(request.response);
+	return res;
+}
+
+function GiveHero(heroName,heroLv)
+{
+	var request = new XMLHttpRequest();	
+	var body = 'GiveHero='+heroName+'='+heroLv;
+	request.open('POST', 'http://localhost:8888', false);	
+	request.setRequestHeader('content-type', 'application/x-www-form-urlencoded');
+	request.send(body);	
+	var res=JSON.parse(request.response.split('\n')[0]);
+	var statUp=JSON.parse(request.response.split('\n')[1]);
+	res.hp+=statUp.hp*heroLv;
+	res.tp+=statUp.tp*heroLv;
+	res.att+=statUp.att*heroLv;
+	res.def+=statUp.def*heroLv;
+	res.agi+=statUp.agi*heroLv;	
+	return res;
+}
+
+function InitializeBattle(hero, enemy)
+{
+	document.body.innerHTML = "Eerie "+enemy.name+" in front of you!<br>";		
+	document.body.innerHTML += enemy.name+":<br>hp:"+enemy.currentHp+'/'+enemy.hp+'<br><br><br>';
+	for (var i=0; i<hero.skill.length; i++)
+	{		
+		document.body.innerHTML += "<input type=\"button\" value=\""+hero.skill[i]+"\" onClick=\"TakeAction('"+hero.skill[i]+"')\" style=\"position:absolute; left:"+(6*(i+1))+"%\"/>";
+	}
+	document.body.innerHTML += hero.name+":<br><br>hp:"+hero.currentHp+'/'+hero.hp+"<br>";//"<div style=\"margin-left:10px\">"+
+	document.body.innerHTML += "tp:"+hero.currentTp+'/'+hero.tp+'<br><br><br>';
+	
+}
+
+function TakeAction(skill)
+{
+	var request = new XMLHttpRequest();	
+	var body = 'TakeAction='+skill+'='+JSON.stringify(hero)+'='+JSON.stringify(enemy);
+	request.open('POST', 'http://localhost:8888', false);	
+	request.setRequestHeader('content-type', 'application/x-www-form-urlencoded');
+	request.send(body);
+	console.log(request.response);		
+	var result=request.response.split('=');		
+	result[result.length-1]=result[result.length-1].replace('\n','');	
+	if (result[4]=='dead')
+	{
+		InitializeOver(true,hero,enemy);
+		return;
+	}	
+	enemy.currentHp-=result[2];
+	hero.currentHp-=result[6];
+	if (hero.currentHp<=0)
+	{
+		InitializeOver(false,hero,enemy);
+		return;
+	}
+	InitializeBattle(hero, enemy);
+	if (result[1]=='miss')
+	{
+		document.body.innerHTML += "Missed with " + skill + " attack!<br>";
+	}
+	else
+	{
+		document.body.innerHTML += "Damaged " + enemy.name + " for " + result[2] + " hp!<br>";
+	}
+	document.body.innerHTML += enemy.name + " attacked with " + result[4] + " for " + result[6] + " hp!<br>";
+}
+
+function InitializeOver(win, hero, enemy)
+{
+	if (win)
+	{
+		document.body.innerHTML = "You won!";
+	}
+	else
+	{
+		document.body.innerHTML = "You lose!";
+	}
+	document.body.innerHTML += "<input type=\"button\" value=\"Continue\" onClick=\"GoToRoom('"+actionRoom+"')\"/>";
 }

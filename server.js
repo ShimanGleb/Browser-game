@@ -18,7 +18,7 @@ function start(route) {
     });
     request.on('end', function() {
         console.log(data);
-		var info=data.split(':');
+		var info=data.split('=');
 		
 		route(response,info);
         response.end();
