@@ -1,0 +1,3 @@
+entrance=5
+ring=10
+sewers=15

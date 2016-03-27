@@ -1,4 +1,4 @@
-dante={ "name": "dante", "hp": 50, "tp": 30, "att": 10, "def": 3, "agi": 5, "skill": ["slash","awesome slash"] }
+dante={ "name": "dante", "hp": 50, "tp": 30, "att": 10, "def": 3, "agi": 5, "skill": ["slash","awesome slash"], "exp": 0 }
 { "hp": 3, "tp": 5 , "att": 3, "def": 1, "agi": 4 }
-doomguy={ "name": "doomguy", "hp": 50, "tp": 15, "att": 10, "def": 5, "agi": 3, "skill": ["shoot", "shotgun shoot"] }
+doomguy={ "name": "doomguy", "hp": 50, "tp": 15, "att": 10, "def": 5, "agi": 3, "skill": ["shoot", "shotgun shoot"], "exp": 0 }
 { "hp": 3, "tp": 2 , "att": 3, "def": 2, "agi": 2 }

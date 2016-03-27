@@ -1,0 +1,3 @@
+user1=doomguy=12=45=dante=6=20
+user2=doomguy=14=40
+user1=doomguy=12=45=painkiller=2=50
