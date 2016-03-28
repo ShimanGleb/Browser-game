@@ -1,3 +1,3 @@
-user1=dante=4
-user2=doomguy=20
-user3=painkiller=14
+user1=dante
+user2=doomguy
+user3=painkiller
