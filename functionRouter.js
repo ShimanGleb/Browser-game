@@ -4,9 +4,15 @@ function route(response, info) {
 		case "ConfirmConnection":
 		ConfirmConnection(response);
 		break;
+		case "RequestHeroes":
+		RequestHeroes(response,info);
+		break;
+		case "ChangeCharacter":
+		ChangeCharacter(response,info);
+		break;
 		case "GiveMaps":
 		GiveMaps(response, info);
-		break;
+		break;		
 		case "Sortie":
 		Sortie(response, info);
 		break;
@@ -31,6 +37,26 @@ function route(response, info) {
 
 exports.route = route;
 
+function RequestHeroes(response, info)
+{
+	var fs = require('fs');
+	var data = fs.readFileSync('playerChars.txt', 'utf8').split('\n');
+	
+	for (var i=0; i<data.length; i++)
+	{
+		if (data[i].split('=')[0]==info[1])
+		{
+			var plIn=data[i].split('=');
+			for (var j=1; j<plIn.length-2; j+=3)
+			{
+				response.write(plIn[j]+'='+plIn[j+1]+'='+plIn[j+2]);
+				if (j!=plIn.length-3) response.write('\n');
+			}
+			break;
+		}
+	}
+}
+
 function ConfirmConnection(response)
 {
 	response.write("Confirmed");
@@ -50,6 +76,22 @@ function GiveMaps(response, info){
 	}
 }
 
+function ChangeCharacter(response, info)
+{
+	var fs = require('fs');
+	var data = fs.readFileSync('currentCharacters.txt', 'utf8').split('\n');
+	
+	for (var i=0; i<data.length; i++)
+	{
+		if (data[i].split('=')[0]==info[1])
+		{
+			data[i]=data[i].split('=')[0]+'='+info[2];
+			break;
+		}
+	}
+	fs.writeFile('currentCharacters.txt',data.join('\n'));	
+}
+
 function Sortie(response, info)
 {
 	var fs = require('fs');
@@ -59,7 +101,7 @@ function Sortie(response, info)
 	{
 		if (lines[i].split('=')[0]==info[1])
 		{
-			response.write(lines[i].split('=')[1]+'=');
+			response.write(lines[i].split('=')[1]+'=');			
 			var heroes=fs.readFileSync('playerChars.txt', 'utf8').split('\n');
 			for (var j=0; j<heroes.length; j++)
 			{
@@ -68,17 +110,16 @@ function Sortie(response, info)
 				{
 					
 					for (var k=1; k<heroes[j].split('=').length; k+=3)
-					{						
-						console.log(heroes[j].split('=')[k]);
+					{				
 						if (heroes[j].split('=')[k]==lines[i].split('=')[1]) 
 						{
+							console.log('1');
 							response.write(heroes[j].split('=')[k+1]+'\n');
 							break;
 						}
 					}
 				}
-			}
-			//response.write(lines[i]+'\n');
+			}			
 			break;
 		}
 	}
@@ -175,7 +216,14 @@ function TakeAction(response,info)
 		{						
 			var heroTemp=hero;
 			var enemyTemp=enemy;
-			for (var j=1; j<skill.length; j+=2)
+			if (hero.currentTp<skill[1])
+			{
+				response.write("Not enough");
+				return;
+			}			
+			hero.currentTp-=skill[1];
+			response.write(skill[1]+'=');
+			for (var j=2; j<skill.length; j+=2)
 			{
 				skill[j]=skill[j].replace('\r','');
 				skill[j]=skill[j].replace('\n','');				
@@ -204,8 +252,15 @@ function TakeAction(response,info)
 		response.write('dead');
 		return;
 	}
+	ActivateEnemy(response, enemy, hero, lines);
+	
+	hero.currentHp=heroTemp.currentHp;	
+}
+
+function ActivateEnemy(response, enemy, hero, lines)
+{
 	var chosenSkill=enemy.skill[Math.round(Math.random() * (enemy.skill.length-1))];
-	response.write(chosenSkill+'=');	
+		
 	for (var i=0; i<lines.length; i++)
 	{
 		var skill=lines[i].split('=');		
@@ -213,6 +268,14 @@ function TakeAction(response,info)
 		{						
 			var heroTemp=hero;
 			var enemyTemp=enemy;
+			if (enemy.currentTp<skill[1])
+			{
+				ActivateEnemy(response, enemy, hero, lines);				
+				return;
+			}
+			response.write(chosenSkill+'=');
+			enemy.currentTp-=skill[1];
+			response.write(skill[1]+'=');
 			for (var j=1; j<skill.length; j+=2)
 			{
 				switch(skill[j])
@@ -231,8 +294,6 @@ function TakeAction(response,info)
 			Fight(response, enemyTemp, heroTemp);
 		}
 	}
-	hero.currentHp=heroTemp.currentHp;
-	//response.write('\n'+JSON.stringify(hero)+'\n'+JSON.stringify(enemy));
 }
 
 function Fight(response, attacker, defender)
@@ -328,8 +389,7 @@ function LeaveDungeon(response, info)
 		}
 		else {nD+=playerData[i]; if (i!=playerData.length-1) nD+='\n';}		
 		
-	}
-	console.log(nD);
+	}	
 	fs.writeFile('playerChars.txt',nD);
 }
 
