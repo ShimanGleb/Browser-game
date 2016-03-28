@@ -4,6 +4,7 @@ var enemies;
 var wasBattle=false;
 var willLeave=false;
 var actionRoom;
+var defeated=false;
 
 function Initialize(username)
 {	
@@ -15,12 +16,40 @@ function Initialize(username)
 	console.log(request.response);
 	if (request.response=="Confirmed")
 	{
-		document.body.innerHTML="<input type=\"button\" value=\"Maps\" onClick=\"RequestMaps('"+username+"')\"/>";		
+		document.body.innerHTML="<input type=\"button\" value=\"Maps\" onClick=\"RequestMaps('"+username+"')\"/>";
+		document.body.innerHTML+="<br><input type=\"button\" value=\"Select guardian\" onClick=\"RequestHeroes('"+username+"')\"/>";
 	}
 	else
 	{
 		document.body.innerHTML="Error during server connection.";
 	}	
+}
+
+function RequestHeroes(username)
+{
+	var request = new XMLHttpRequest();
+	var body = 'RequestHeroes='+username;
+	request.open('POST', 'http://localhost:8888', false);	
+	request.setRequestHeader('content-type', 'application/x-www-form-urlencoded');
+	request.send(body);
+	console.log(request.response);
+	var res=request.response.split('\n');
+	document.body.innerHTML='';
+	for (var i=0; i<res.length; i++)
+	{
+		document.body.innerHTML+=res[i].split('=')[0] + '<br>Lv:'+ res[i].split('=')[1] + '<br>Exp:' + res[i].split('=')[2]+'<br>';
+		document.body.innerHTML+="<input type=\"button\" value=\"Select\" onClick=\"ChangeCharacter('"+username+"','"+res[i].split('=')[0]+"')\"/><br><br>";
+	}
+	document.body.innerHTML+="<br><input type=\"button\" value=\"Back\" onClick=\"Initialize('"+username+"')\"/>";
+}
+
+function ChangeCharacter(username,hero)
+{
+	var request = new XMLHttpRequest();
+	var body = 'ChangeCharacter='+username+'='+hero;	
+	request.open('POST', 'http://localhost:8888', false);	
+	request.setRequestHeader('content-type', 'application/x-www-form-urlencoded');
+	request.send(body);	
 }
 
 function RequestMaps(username)
@@ -41,11 +70,13 @@ function RequestMaps(username)
 
 function Sortie(username,map)
 {
+	defeated=false;
 	var request = new XMLHttpRequest();
 	var body = 'Sortie='+username+'='+map;
 	request.open('POST', 'http://localhost:8888', false);	
 	request.setRequestHeader('content-type', 'application/x-www-form-urlencoded');
 	request.send(body);	
+	console.log(request.response);
 	var data=request.response.split('\n');
 	var heroName=data[0].split('=')[0];
 	var heroLv=data[0].split('=')[1];
@@ -120,7 +151,15 @@ function GoToRoom(username,room,map)
 	wasBattle=false;
 	if (willLeave)
 	{
-		LeaveDungeon('Made through', map, username);
+		willLeave=false;
+		if (!defeated)
+		{
+			LeaveDungeon('Made through', map, username);
+		}
+		else
+		{
+			LeaveDungeon('Flee', map, username);
+		}
 		return;
 	}
 	document.body.innerHTML="You are in " + rooms[0]+"<br>";
@@ -184,45 +223,55 @@ function TakeAction(skill)
 	console.log(request.response);		
 	var result=request.response.split('=');		
 	result[result.length-1]=result[result.length-1].replace('\n','');	
-	document.body.innerHTML="";
-	if (result[4]=='dead')
+	document.body.innerHTML="";		
+	result[1]=result[1].replace('\r','');
+	result[1]=result[1].replace('\n','');	
+	if (result[1]=="Not enough")
 	{
-		document.body.innerHTML += "Damaged " + enemy.name + " for " + result[2] + " hp!<br>";
+		InitializeBattle(hero,enemy);
+		document.body.innerHTML +='<br>Not enough TP!';
+		return;
+	}
+	hero.currentTp-=result[1];	
+	if (result[5]=='dead')
+	{
+		document.body.innerHTML += "Damaged " + enemy.name + " for " + result[3] + " hp!<br>";
 		InitializeOver(true,hero,enemy);
 		return;
 	}	
-	enemy.currentHp-=result[2];
-	hero.currentHp-=result[6];
+	enemy.currentHp-=result[3];
+	enemy.currentTp-=result[6]
+	hero.currentHp-=result[8];
 	if (hero.currentHp<=0)
 	{
-		if (result[1]=='miss')
+		if (result[2]=='miss')
 		{
 		document.body.innerHTML += "Missed with " + skill + " attack!<br>";
 		}
 		else
 		{
-		document.body.innerHTML += "Damaged " + enemy.name + " for " + result[2] + " hp!<br>";
+		document.body.innerHTML += "Damaged " + enemy.name + " for " + result[3] + " hp!<br>";
 		}
-		document.body.innerHTML += enemy.name + " attacked with " + result[4] + " for " + result[6] + " hp!<br>";
+		document.body.innerHTML += enemy.name + " attacked with " + result[5] + " for " + result[8] + " hp!<br>";
 		InitializeOver(false,hero,enemy);
 		return;
 	}	
 	InitializeBattle(hero, enemy);
-	if (result[1]=='miss')
+	if (result[2]=='miss')
 	{
 		document.body.innerHTML += "Missed with " + skill + " attack!<br>";
 	}
 	else
 	{
-		document.body.innerHTML += "Damaged " + enemy.name + " for " + result[2] + " hp!<br>";
+		document.body.innerHTML += "Damaged " + enemy.name + " for " + result[3] + " hp!<br>";
 	}
-	if (result[5]=='miss')
+	if (result[7]=='miss')
 	{
-		document.body.innerHTML += enemy.name + " attacked with " + result[4] + " but missed!<br>";
+		document.body.innerHTML += enemy.name + " attacked with " + result[5] + " but missed!<br>";
 	}
 	else
 	{
-		document.body.innerHTML += enemy.name + " attacked with " + result[4] + " for " + result[6] + " hp!<br>";
+		document.body.innerHTML += enemy.name + " attacked with " + result[5] + " for " + result[8] + " hp!<br>";
 	}
 }
 
@@ -236,6 +285,7 @@ function InitializeOver(win, hero, enemy)
 	else
 	{
 		document.body.innerHTML += "You lose!";
+		defeated=true;
 	}
 	document.body.innerHTML += "<br><input type=\"button\" value=\"Continue\" onClick=\"GoToRoom('"+actionRoom+"')\"/>";
 }
