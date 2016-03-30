@@ -1,3 +1,5 @@
+var battleRouter = require("./battleRouter");
+
 function route(response, info) {	
 	switch (info[0])
 	{
@@ -26,11 +28,15 @@ function route(response, info) {
 		GiveHero(response, info);
 		break;
 		case "TakeAction":
-		TakeAction(response, info)
+		battleRouter.TakeAction(response, info);
 		break;
 		case "LeaveDungeon":
 		LeaveDungeon(response, info);
 		break;
+		case "RequestTop":
+		RequestTop(response, info)
+		break;
+		
 	}	
 	
 }
@@ -201,142 +207,6 @@ function GiveHero(response, info)
 	}
 }
 
-function TakeAction(response,info)
-{
-	var fs = require('fs');
-	var hero=JSON.parse(info[2]);
-	var enemy=JSON.parse(info[3]);
-	var data = fs.readFileSync('skills.txt', 'utf8');	
-	var lines=data.split('\n');
-	response.write('hero=');
-	for (var i=0; i<lines.length; i++)
-	{		
-		var skill=lines[i].split('=');		
-		if (skill[0]==info[1])
-		{						
-			var heroTemp=hero;
-			var enemyTemp=enemy;
-			if (hero.currentTp<skill[1])
-			{
-				response.write("Not enough");
-				return;
-			}			
-			hero.currentTp-=skill[1];
-			response.write(skill[1]+'=');
-			for (var j=2; j<skill.length; j+=2)
-			{
-				skill[j]=skill[j].replace('\r','');
-				skill[j]=skill[j].replace('\n','');				
-				switch(skill[j])
-				{
-					case "att Up":					
-					heroTemp.att*=skill[j+1];					
-					break;
-					case "agi Up":
-					heroTemp.agi*=skill[j+1];
-					break;
-					case "agi Dw":
-					enemyTemp.agi/=skill[j+1];
-					break;
-				}
-			}
-			Fight(response, heroTemp, enemyTemp);
-			break;
-		}
-	}
-		
-	enemy.currentHp=enemyTemp.currentHp;
-	response.write('=enemy=');
-	if (enemy.currentHp<=0)
-	{
-		response.write('dead');
-		return;
-	}
-	ActivateEnemy(response, enemy, hero, lines);
-	
-	hero.currentHp=heroTemp.currentHp;	
-}
-
-function ActivateEnemy(response, enemy, hero, lines)
-{
-	var chosenSkill=enemy.skill[Math.round(Math.random() * (enemy.skill.length-1))];
-		
-	for (var i=0; i<lines.length; i++)
-	{
-		var skill=lines[i].split('=');		
-		if (skill[0]==chosenSkill)
-		{						
-			var heroTemp=hero;
-			var enemyTemp=enemy;
-			if (enemy.currentTp<skill[1])
-			{
-				ActivateEnemy(response, enemy, hero, lines);				
-				return;
-			}
-			response.write(chosenSkill+'=');
-			enemy.currentTp-=skill[1];
-			response.write(skill[1]+'=');
-			for (var j=1; j<skill.length; j+=2)
-			{
-				switch(skill[j])
-				{
-					case "att Up":
-					enemyTemp.att*=skill[j+1];
-					break;
-					case "agi Up":
-					enemyTemp.agi*=skill[j+1];
-					break;
-					case "agi Dw":
-					heroTemp.agi/=skill[j+1];
-					break;
-				}
-			}
-			Fight(response, enemyTemp, heroTemp);
-		}
-	}
-}
-
-function Fight(response, attacker, defender)
-{
-	var hitted;	
-	if (attacker.agi!=defender.agi)
-	{
-		var evade=Math.random()*(10*(defender.agi/attacker.agi));
-		var hit=Math.random() * 100;
-		
-		if (hit>=evade)
-		{
-			hitted=true;
-		}
-		else
-		{
-			hitted=false;
-		}	
-	}
-	if (attacker.agi==defender.agi)
-	{
-		if (Math.random()==1)
-		{
-			hitted=true;
-		}
-		else
-		{
-			hitted=false;
-		}
-	}	
-	if (hitted)
-	{
-		var damage=Math.round(attacker.att)-Math.round(defender.def);
-		if (damage<=0) damage=1;
-		defender.currentHp-=damage;
-		response.write('hit='+damage);
-	}
-	else
-	{
-		response.write('miss=0');
-	}
-}
-
 function LeaveDungeon(response, info)
 {
 	var fs = require('fs');
@@ -412,4 +282,33 @@ function UpdateScores(username,earnedScore)
 		if (i!=data.length-2) nData+='=';
 	}	
 	fs.writeFile('ranking.txt',nData);
+}
+
+function RequestTop(response, info)
+{
+	var fs = require('fs');
+	var lines = fs.readFileSync('ranking.txt', 'utf8').split('=');
+	userScores=new Array();
+	users=new Array();
+	for (var i=0; i<lines.length; i+=2)
+	{
+		users.push(lines[i]);
+		userScores.push(lines[i+1]);
+	}
+	for (var k=0; k<users.length/2+1; k++)
+	for (var i=0; i<userScores.length-1; i++)
+	{		
+		if (Number(userScores[i])<Number(userScores[i+1]))
+		{
+			var x=userScores[i];
+			userScores[i]=userScores[i+1];
+			userScores[i+1]=x;
+			
+			x=users[i];
+			users[i]=users[i+1];
+			users[i+1]=x;
+		}
+	}
+	response.write(users[0]+'='+userScores[0]+'='+users[1]+'='+userScores[1]+'='+users[2]+'='+userScores[2]+'\n');
+	response.write(userScores[users.indexOf(info[1])]+'='+(users.indexOf(info[1])+1));	
 }
