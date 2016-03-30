@@ -18,6 +18,7 @@ function Initialize(username)
 	{
 		document.body.innerHTML="<input type=\"button\" value=\"Maps\" onClick=\"RequestMaps('"+username+"')\"/>";
 		document.body.innerHTML+="<br><input type=\"button\" value=\"Select guardian\" onClick=\"RequestHeroes('"+username+"')\"/>";
+		document.body.innerHTML+="<br><input type=\"button\" value=\"Top\" onClick=\"RequestTop('"+username+"')\"/>";
 	}
 	else
 	{
@@ -306,4 +307,18 @@ function LeaveDungeon(leave, map, username)
 	var body = 'LeaveDungeon='+leave+'='+map+'='+username+'='+hero.exp;
 	request.send(body);
 	document.body.innerHTML += "<br><input type=\"button\" value=\"Continue\" onClick=\"Initialize('"+username+"')\"/>";
+}
+
+function RequestTop(username)
+{
+	var request = new XMLHttpRequest();	
+	var body = 'RequestTop='+username;
+	request.open('POST', 'http://localhost:8888', false);	
+	request.setRequestHeader('content-type', 'application/x-www-form-urlencoded');
+	request.send(body);
+	console.log(request.response);
+	var players=request.response.split('\n');
+	document.body.innerHTML = "<table border='1'><tr><th>Rank</th><th>Name</th><th>Score</th></tr><tr><td>1</td><td>"+players[0].split('=')[0]+"</td><td>"+players[0].split('=')[1]+"</td></tr><tr><td>2</td><td>"+players[0].split('=')[2]+"</td><td>"+players[0].split('=')[3]+"</td></tr><tr><td>3</td><td>"+players[0].split('=')[4]+"</td><td>"+players[0].split('=')[5]+"</td></tr><tr><td>"+players[1].split('=')[1]+"</td><td>"+username+"</td><td>"+players[1].split('=')[0]+"</td></tr>";	
+	document.body.innerHTML += "</table>";
+	document.body.innerHTML+="<br><input type=\"button\" value=\"Back\" onClick=\"Initialize('"+username+"')\"/>";
 }
