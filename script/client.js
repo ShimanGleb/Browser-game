@@ -9,12 +9,11 @@ var defeated=false;
 function Initialize(username)
 {	
 	var request = new XMLHttpRequest();
-	var body = 'ConfirmConnection';
-	request.open('POST', 'http://localhost:8888', false);	
+	var body = 'ConfirmConnection';	
+	request.open('HEAD', 'http://localhost:8888/client.html?request=ConfirmConnection', false);
 	request.setRequestHeader('content-type', 'application/x-www-form-urlencoded');
-	request.send(body);
-	console.log(request.response);
-	if (request.response=="Confirmed")
+	request.send(body);	
+	if (request.statusText=="OK")
 	{
 		document.body.innerHTML="<input type=\"button\" value=\"Maps\" onClick=\"RequestMaps('"+username+"')\"/>";
 		document.body.innerHTML+="<br><input type=\"button\" value=\"Select guardian\" onClick=\"RequestHeroes('"+username+"')\"/>";
@@ -30,7 +29,8 @@ function RequestHeroes(username)
 {
 	var request = new XMLHttpRequest();
 	var body = 'RequestHeroes='+username;
-	request.open('POST', 'http://localhost:8888', false);	
+	//request.open('POST', 'http://localhost:8888', false);	
+	request.open('GET', 'http://localhost:8888/client.html?request=RequestHeroes&username='+username, false);
 	request.setRequestHeader('content-type', 'application/x-www-form-urlencoded');
 	request.send(body);
 	console.log(request.response);
@@ -41,7 +41,7 @@ function RequestHeroes(username)
 		document.body.innerHTML+=res[i].split('=')[0] + '<br>Lv:'+ res[i].split('=')[1] + '<br>Exp:' + res[i].split('=')[2]+'<br>';
 		document.body.innerHTML+="<input type=\"button\" value=\"Select\" onClick=\"ChangeCharacter('"+username+"','"+res[i].split('=')[0]+"')\"/><br><br>";
 	}
-	document.body.innerHTML+="<br><input type=\"button\" value=\"Back\" onClick=\"Initialize('"+username+"')\"/>";
+	document.body.innerHTML+="<br><input type=\"button\" value=\"Back\" onClick=\"Initialize('"+username+"')\"/>";	
 }
 
 function ChangeCharacter(username,hero)
@@ -57,9 +57,9 @@ function RequestMaps(username)
 {	
 	var request = new XMLHttpRequest();
 	var body = 'GiveMaps='+username;
-	request.open('POST', 'http://localhost:8888', false);	
+	request.open('GET', 'http://localhost:8888/client.html?request=GiveMaps&username='+username, false);	
 	request.setRequestHeader('content-type', 'application/x-www-form-urlencoded');
-	request.send(body);	
+	request.send();	
 	var maps=request.response.split('=');
 	document.body.innerHTML = "";
 	for (var i=1; i<maps.length; i++)
@@ -177,9 +177,9 @@ function GiveEnemy(enemyName)
 {
 	var request = new XMLHttpRequest();	
 	var body = 'GiveEnemy='+enemyName;
-	request.open('POST', 'http://localhost:8888', false);	
+	request.open('GET', 'http://localhost:8888/client.html?request=GiveEnemy&enemyname='+enemyName, false);	
 	request.setRequestHeader('content-type', 'application/x-www-form-urlencoded');
-	request.send(body);	
+	request.send();	
 	var res=JSON.parse(request.response);
 	return res;
 }
@@ -187,10 +187,9 @@ function GiveEnemy(enemyName)
 function GiveHero(heroName,heroLv)
 {
 	var request = new XMLHttpRequest();	
-	var body = 'GiveHero='+heroName+'='+heroLv;
-	request.open('POST', 'http://localhost:8888', false);	
+	request.open('GET', 'http://localhost:8888/client.html?request=GiveHero&heroname='+heroName+'&herolv='+heroLv, false);	
 	request.setRequestHeader('content-type', 'application/x-www-form-urlencoded');
-	request.send(body);	
+	request.send();	
 	var res=JSON.parse(request.response.split('\n')[0]);
 	var statUp=JSON.parse(request.response.split('\n')[1]);
 	res.hp+=statUp.hp*heroLv;
@@ -203,15 +202,31 @@ function GiveHero(heroName,heroLv)
 
 function InitializeBattle(hero, enemy)
 {
-	document.body.innerHTML = "Eerie "+enemy.name+" in front of you!<br>";		
+	document.body.innerHTML = "Eerie "+enemy.name+" in front of you!<br>";
+	document.body.innerHTML += "<br><canvas id='enemyPic'></canvas><br>";			
+	
 	document.body.innerHTML += enemy.name+":<br>hp:"+enemy.currentHp+'/'+enemy.hp+'<br><br><br>';
 	for (var i=0; i<hero.skill.length; i++)
 	{		
 		document.body.innerHTML += "<input type=\"button\" value=\""+hero.skill[i]+"\" onClick=\"TakeAction('"+hero.skill[i]+"')\" style=\"position:absolute; left:"+(6*(i+1))+"%\"/>";
 	}
-	document.body.innerHTML += hero.name+":<br><br>hp:"+hero.currentHp+'/'+hero.hp+"<br>";
+	
+	document.body.innerHTML += hero.name+":<br>";
+	document.body.innerHTML += "<br><canvas id='heroPic'></canvas><br>";
+	document.body.innerHTML += "<br>hp:"+hero.currentHp+'/'+hero.hp+"<br>";
 	document.body.innerHTML += "tp:"+hero.currentTp+'/'+hero.tp+'<br><br><br>';
 	
+	var img = new Image(); 
+	var ctx = document.getElementById('enemyPic').getContext('2d');	
+	img.onload = function () {
+    ctx.drawImage(img,0,0);
+		if (img.src!='img/'+hero.name+'.png')
+		{
+			ctx = document.getElementById('heroPic').getContext('2d');	
+			img.src = 'img/'+hero.name+'.png';
+		}
+    }
+	img.src = 'img/'+enemy.name+'.png';
 }
 
 function TakeAction(skill)
@@ -220,8 +235,7 @@ function TakeAction(skill)
 	var body = 'TakeAction='+skill+'='+JSON.stringify(hero)+'='+JSON.stringify(enemy);
 	request.open('POST', 'http://localhost:8888', false);	
 	request.setRequestHeader('content-type', 'application/x-www-form-urlencoded');
-	request.send(body);
-	console.log(request.response);		
+	request.send(body);	
 	var result=request.response.split('=');		
 	result[result.length-1]=result[result.length-1].replace('\n','');	
 	document.body.innerHTML="";		
@@ -231,6 +245,17 @@ function TakeAction(skill)
 	{
 		InitializeBattle(hero,enemy);
 		document.body.innerHTML +='<br>Not enough TP!';
+		var img = new Image(); 
+		var ctx = document.getElementById('enemyPic').getContext('2d');	
+		img.onload = function () {
+		ctx.drawImage(img,0,0);
+		if (img.src!='img/'+hero.name+'.png')
+		{
+			ctx = document.getElementById('heroPic').getContext('2d');	
+			img.src = 'img/'+hero.name+'.png';
+		}
+    }
+	img.src = 'img/'+enemy.name+'.png';
 		return;
 	}
 	hero.currentTp-=result[1];	
@@ -274,6 +299,17 @@ function TakeAction(skill)
 	{
 		document.body.innerHTML += enemy.name + " attacked with " + result[5] + " for " + result[8] + " hp!<br>";
 	}
+	var img = new Image(); 
+	var ctx = document.getElementById('enemyPic').getContext('2d');	
+	img.onload = function () {
+    ctx.drawImage(img,0,0);
+		if (img.src!='img/'+hero.name+'.png')
+		{
+			ctx = document.getElementById('heroPic').getContext('2d');	
+			img.src = 'img/'+hero.name+'.png';
+		}
+    }
+	img.src = 'img/'+enemy.name+'.png';
 }
 
 function InitializeOver(win, hero, enemy)
@@ -312,10 +348,9 @@ function LeaveDungeon(leave, map, username)
 function RequestTop(username)
 {
 	var request = new XMLHttpRequest();	
-	var body = 'RequestTop='+username;
-	request.open('POST', 'http://localhost:8888', false);	
+	request.open('GET', 'http://localhost:8888/client.html?request=RequestTop&username='+username, false);		
 	request.setRequestHeader('content-type', 'application/x-www-form-urlencoded');
-	request.send(body);
+	request.send();
 	console.log(request.response);
 	var players=request.response.split('\n');
 	document.body.innerHTML = "<table border='1'><tr><th>Rank</th><th>Name</th><th>Score</th></tr><tr><td>1</td><td>"+players[0].split('=')[0]+"</td><td>"+players[0].split('=')[1]+"</td></tr><tr><td>2</td><td>"+players[0].split('=')[2]+"</td><td>"+players[0].split('=')[3]+"</td></tr><tr><td>3</td><td>"+players[0].split('=')[4]+"</td><td>"+players[0].split('=')[5]+"</td></tr><tr><td>"+players[1].split('=')[1]+"</td><td>"+username+"</td><td>"+players[1].split('=')[0]+"</td></tr>";	
