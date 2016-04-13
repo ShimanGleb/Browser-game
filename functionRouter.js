@@ -1,43 +1,14 @@
 var battleRouter = require("./battleRouter");
 
-function route(response, info) {	
-	switch (info[0])
+function route(response, info) {
+	try
 	{
-		case "ConfirmConnection":
-		ConfirmConnection(response);
-		break;
-		case "RequestHeroes":
-		RequestHeroes(response,info);
-		break;
-		case "ChangeCharacter":
-		ChangeCharacter(response,info);
-		break;
-		case "GiveMaps":
-		GiveMaps(response, info);
-		break;		
-		case "Sortie":
-		Sortie(response, info);
-		break;
-		case "GoToRoom":
-		GoToRoom(response, info);
-		break;
-		case "GiveEnemy":
-		GiveEnemy(response, info);
-		break;
-		case "GiveHero":
-		GiveHero(response, info);
-		break;
-		case "TakeAction":
+		eval(info[0])(response,info);
+	}
+	catch(err)
+	{
 		battleRouter.TakeAction(response, info);
-		break;
-		case "LeaveDungeon":
-		LeaveDungeon(response, info);
-		break;
-		case "RequestTop":
-		RequestTop(response, info)
-		break;
-		
-	}	
+	}
 	
 }
 
@@ -46,8 +17,7 @@ exports.route = route;
 function RequestHeroes(response, info)
 {
 	var fs = require('fs');
-	var data = fs.readFileSync('playerChars.txt', 'utf8').split('\n');
-	
+	var data = fs.readFileSync('playerChars.txt', 'utf8').split('\n');	
 	for (var i=0; i<data.length; i++)
 	{
 		if (data[i].split('=')[0]==info[1])
